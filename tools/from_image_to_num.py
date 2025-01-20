@@ -124,10 +124,11 @@ def recognize_number(arr):
     # 0 1 2 3 4 5 6 7 8 9
     vc = get_lines(gh // p, gw // p // 2, True, zp)
     if len(vc) == 2:
-        if vc[0]["start"][1] == 0:
+        hc = get_lines(gw // p, vc[0]["start"][1], False, zp)
+        if vc[0]["start"][1] == 0 and len(hc) == 1 and hc[0]["count"] / (gw // p) > 0.3:
             if vc[1]["finish"][1] >= gh // p - 2:
                 return 0 # hollow zero
-            if vc[1]["count"] > 1:
+            if vc[1]["count"] >= 1 and hc[0]["count"] / (gw // p) > 0.775:
                 return 7
         else:
             return 4
