@@ -22,6 +22,7 @@ class ControlFrame(ttk.Frame):
         self._create_time = time.time_ns()
         self._start_time = None
         self._current_time = 0
+        self.show_ms = True
 
     def start_timer(self):
         if self._is_timer_run:
@@ -44,7 +45,7 @@ class ControlFrame(ttk.Frame):
         delta_time = time.time_ns() - self._start_time
         self._current_time += delta_time
         self._start_time = time.time_ns()
-        self.after(33, self.timer_update)
+        self.after(33 if self.show_ms else 200, self.timer_update)
 
         seconds = self._current_time // (10 ** 9)
         sec = seconds % 60
@@ -54,17 +55,15 @@ class ControlFrame(ttk.Frame):
         if hours > 0:
             timer_str += f"{hours}:"
         if min > 0 or timer_str:
-            if min > 9:
-                timer_str += f"{min}:"
+            if timer_str:
+                timer_str += f"{min:02d}:"
             else:
-                if timer_str:
-                    timer_str += f"0{min}:"
-                else:
-                    timer_str += f"{min}:"
+                timer_str += f"{min}:"
         if timer_str:
-            timer_str += f"{'0' if sec < 10 else ''}{sec}"
+            timer_str += f"{sec:02d}"
         else:
             timer_str += str(sec)
-        ms = (self._current_time % (10 ** 9)) // (10 ** 6)
-        timer_str += f".{'00' if ms < 10 else ('0' if ms < 100 else '')}{ms}"
+        if self.show_ms:
+            ms = (self._current_time % (10 ** 9)) // (10 ** 6)
+            timer_str += f".{ms:03d}"
         self.timer_textvar.set(timer_str)

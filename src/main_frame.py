@@ -75,6 +75,7 @@ class GameMainFrame:
                 c = Cell(self.canvas, j, i, s, o, self._initial_data.get_value(j, i))
                 self.cells.append(c)
         self.checker = Checker(self.cells)
+        self.control_frame.show_ms = True
         self.control_frame.start_timer()
 
     def refresh(self):
