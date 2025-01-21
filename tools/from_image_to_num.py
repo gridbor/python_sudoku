@@ -10,19 +10,40 @@ if result.returncode != 0:
 
 from PIL import Image
 
-image_path:str = "test.jpg"
-square_size:int = 56
-start_x:int = 6
-start_y:int = 6
+image_path:str|None = None
+square_size:int = 0
+start_x:int = 0
+start_y:int = 0
 
 
 def main():
-    if not os.path.exists(image_path):
-        print(f"Image \"{image_path}\" not found!")
+    if image_path is None:
+        convert_all_images()
+    else:
+        convert_image(image_path)
+    print("--------[ COMPLETE ]--------")
+
+
+def convert_all_images():
+    for fn in os.listdir(os.curdir):
+        if fn.lower().endswith(".jpg") or fn.lower().endswith(".png"):
+            convert_image(fn, True)
+
+
+def convert_image(img_path, in_one_file:bool=False):
+    if not os.path.exists(img_path):
+        print(f"Image \"{img_path}\" not found!")
         return
-    img = Image.open(image_path, "r").convert("L")
-    txt_path = image_path[:image_path.rfind(".")]
-    with open(f"{txt_path}.txt", "w", encoding="utf-8") as txt:
+    img = Image.open(img_path, "r").convert("L")
+    if not in_one_file:
+        txt_path = img_path[:img_path.rfind(".")]
+        mode = "w"
+    else:
+        txt_path = "result"
+        mode = "a+"
+    with open(f"{txt_path}.txt", mode, encoding="utf-8") as txt:
+        if square_size == 0:
+            auto_detect_size_and_offset(img)
         for y in range(9):
             for x in range(9):
                 px = start_x + square_size * x
@@ -33,11 +54,11 @@ def main():
                 num = recognize(piece)
                 if num:
                     txt.write(f"{x}{y}{num}")
+        txt.write("\n")
     img.close()
-    print("--------[ COMPLETE ]--------")
 
 
-def recognize(p):
+def recognize(p:Image.Image):
     maxv = 0
     minv = 255
     for y in range(square_size):
@@ -155,9 +176,18 @@ def recognize_number(arr):
         if len(ones) == 3 and ones[1]["line"]["count"] / (gw // p) > 0.45:
             return 8
         if len(ones) >= 3:
-            if ones[1]["line"]["start"][1] < gh // p // 2:
+            mi = 0
+            minc = None
+            for mo in ones[1:len(ones)-1]:
+                if mi == 0:
+                    minc = { "count":mo["line"]["count"], "index":mi }
+                elif minc["count"] > mo["line"]["count"]:
+                    minc["count"] = mo["line"]["count"]
+                    minc["index"] = mi
+                mi += 1
+            if ones[1 + minc["index"]]["line"]["start"][1] < gh // p // 2:
                 return 6
-            elif ones[1]["line"]["start"][1] > gh // p // 2:
+            elif ones[1 + minc["index"]]["line"]["start"][1] > gh // p // 2:
                 return 9
     pstr = ""
     for my in range(gh // p):
@@ -186,6 +216,57 @@ def get_lines(size:int, c:int, is_v:bool, points:set)->list[dict]:
             else:
                 vc.append({"start":v, "finish":v, "count":1})
     return vc
+
+
+
+def auto_detect_size_and_offset(img:Image.Image):
+    global square_size, start_x, start_y
+    i = 0
+    left = True
+    right = True
+    top = True
+    bottom = True
+    colors = {"left":None, "top":None, "right":None, "bottom":None}
+    w = img.width
+    h = img.height
+    lx = 0
+    ty = 0
+    rx = w - 1
+    by = h - 1
+    while left or right or top or bottom:
+        if left:
+            c = img.getpixel([i, h // 2])
+            if colors["left"] is None:
+                colors["left"] = c
+            elif abs(colors["left"] - c) > 30:
+                lx = i
+                left = False
+        if right:
+            c = img.getpixel([w - 1 - i, h // 2])
+            if colors["right"] is None:
+                colors["right"] = c
+            elif abs(colors["right"] - c) > 30:
+                rx = w - 1 - i
+                right = False
+        if top:
+            c = img.getpixel([w // 2, i])
+            if colors["top"] is None:
+                colors["top"] = c
+            elif abs(colors["top"] - c) > 30:
+                ty = i
+                top = False
+        if bottom:
+            c = img.getpixel([w // 2, h - 1 - i])
+            if colors["bottom"] is None:
+                colors["bottom"] = c
+            elif abs(colors["bottom"] - c) > 30:
+                by = h - 1 - i
+                bottom = False
+        i += 1
+    start_x = lx
+    start_y = ty
+    square_size = min((rx - lx + 1) // 9, (by - ty + 1) // 9)
+
 
 
 if __name__ == "__main__":
