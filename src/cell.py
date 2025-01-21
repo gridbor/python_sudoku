@@ -60,6 +60,13 @@ class Cell:
     def current_value(self)->int:
         return self._current_value
 
+    @current_value.setter
+    def current_value(self, v:int):
+        if not self._editable:
+            return
+        self._current_value = v
+        self.changeValue()
+
     @property
     def column(self)->int:
         return (self.id - 1) % 9
@@ -91,6 +98,12 @@ class Cell:
             self.canvas.itemconfigure(self.text_id, fill="black")
         self._update_texts()
 
+    def set_visibility(self, is_visible:bool):
+        visible = tkinter.HIDDEN if not is_visible else tkinter.NORMAL
+        if self.text_id:
+            self.canvas.itemconfigure(self.text_id, state=visible)
+        if self.text_shadow:
+            self.canvas.itemconfigure(self.text_shadow, state=visible)
 
     def _update_texts(self):
         if self.text_id:
@@ -123,7 +136,7 @@ class Cell:
             self.canvas.tag_raise(self.text_id, self.rect_id)
             self._create_text_shadow()
 
-    def isOverlap(self, x:float, y:float)->bool:
+    def is_overlap(self, x:float, y:float)->bool:
         return self._left < x < self._left + Cell.size() and self._top < y < self._top + Cell.size()
 
     def activate(self, x:float, y:float):

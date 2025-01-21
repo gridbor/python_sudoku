@@ -1,8 +1,10 @@
 import tkinter
+from tkinter import ttk
 import random
 import time
 import os
 from .game_configs import GameConfigs
+from .gui.ControlFrame import ControlFrame
 
 class InitialData:
     def __init__(self):
@@ -34,32 +36,70 @@ class GameMainFrame:
     def __init__(self, parent:tkinter.Tk, w:float, h:float):
         GameMainFrame.FRAME_WIDTH = w
         GameMainFrame.FRAME_HEIGHT = h
+        self.parent = parent
         self.frame_offset = 90
         fw = w + self.frame_offset + 1
         fh = h + self.frame_offset + 1
-        parent.minsize(fw, fh)
+
+        self.control_frame = ControlFrame(parent, self.refresh, self.toggle_visibility)
+        self.control_frame.grid(column=0, row=0, columnspan=2, sticky=tkinter.N + tkinter.EW)
+
+        parent.wait_visibility(self.control_frame)
+        parent.minsize(fw, fh + self.control_frame.winfo_height())
+
         self.canvas = tkinter.Canvas(parent, highlightthickness=0, borderwidth=0, width=fw, height=fh)
-        self.canvas.pack(anchor=tkinter.CENTER, expand=True)
+        self.canvas.grid(row=1, column=1, sticky=tkinter.NSEW)
         self.canvas.bind("<ButtonPress-1>", lambda event: self.mouseEvent("pressed", event))
         self.canvas.bind("<ButtonRelease-1>", lambda event: self.mouseEvent("released", event))
         self.canvas.bind("<Motion>", lambda event: self.mouseEvent("move", event))
+        self.canvas.create_rectangle(0, 0, fw, fh, fill="#fcfcfc")
+
+        parent.columnconfigure([0,1], weight=1)
+        parent.rowconfigure([0,1], weight=1)
 
         self.cells:list[Cell] = []
         self.checker = None
         self.selected_cell:Cell = None
         self._press_time = None
         self._initial_data = None
+        self._board_visible = True
 
     def drawBoard(self):
         ms = min(GameMainFrame.FRAME_WIDTH, GameMainFrame.FRAME_HEIGHT)
         s = ms // 9
         o = (ms - s * 9) / 2 - 1 + self.frame_offset / 2
-        self._initial_data = InitialData()
+        if self._initial_data is None:
+            self._initial_data = InitialData()
         for i in range(9):
             for j in range(9):
                 c = Cell(self.canvas, j, i, s, o, self._initial_data.get_value(j, i))
                 self.cells.append(c)
         self.checker = Checker(self.cells)
+        self.control_frame.start_timer()
+
+    def refresh(self):
+        self.clear_board()
+        self.parent.focus()
+        self.control_frame.reset_timer()
+
+    def clear_board(self):
+        for c in self.cells:
+            c.current_value = 0
+
+    def set_board_visibility(self, visible:bool):
+        if self._board_visible == visible:
+            return
+        self._board_visible = visible
+        for c in self.cells:
+            c.set_visibility(visible)
+        if visible:
+            self.control_frame.start_timer()
+        else:
+            self.control_frame.stop_timer()
+
+    def toggle_visibility(self):
+        self.set_board_visibility(not self._board_visible)
+        self.parent.focus()
 
     def mouseEvent(self, type, event):
         # MOUSE MOTION
@@ -74,7 +114,7 @@ class GameMainFrame:
                 old_select = self.selected_cell
                 self.selected_cell = None
             for c in self.cells:
-                if c.isOverlap(event.x, event.y):
+                if c.is_overlap(event.x, event.y):
                     if not c.editable:
                         break
                     self.selected_cell = c
@@ -85,6 +125,7 @@ class GameMainFrame:
                 is_selector_pressed = old_select.check_selector_choice(event.x, event.y, True)
                 if is_selector_pressed:
                     old_select.accept_selector_choice()
+                    self.check_completed()
                 if self.selected_cell and self.selected_cell.id == old_select.id:
                     self.selected_cell.deactivate()
                     self.selected_cell = None
@@ -108,9 +149,14 @@ class GameMainFrame:
                         return
                 if self.selected_cell.check_selector_choice(event.x, event.y, False):
                     self.selected_cell.accept_selector_choice()
+                    self.check_completed()
                 self.selected_cell.deactivate()
                 self._press_time = None
             self.selected_cell = None
+
+
+    def check_completed(self):
+        ...
 
 
 from .checker import Checker
