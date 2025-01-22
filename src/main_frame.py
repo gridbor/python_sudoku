@@ -116,6 +116,8 @@ class GameMainFrame:
         self.parent.focus()
 
     def set_numbers_highlight(self, value:int, enabled:bool):
+        if not GameConfigs.get_config_value("highlight_mouse_pos_sectors"):
+            return
         for cell in self.cells:
             if cell.current_value != 0 and cell.current_value == value:
                 cell.set_highligh(enabled, True)
