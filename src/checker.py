@@ -46,3 +46,15 @@ class Checker:
             if allows.count(cv) > 0:
                 allows.remove(cv)
         return allows
+
+    def correct_cell_value(self, c:Cell)->bool:
+        indexes = self._groups.get_indexes(c)
+        for index in indexes:
+            other = self.cells[index]
+            if c != other:
+                if other.current_value == 0 or c.current_value == 0 or other.current_value == c.current_value:
+                    return False
+        return True
+
+    def get_cell_groups_indexes(self, c:Cell)->set[int]:
+        return self._groups.get_indexes(c)

@@ -98,4 +98,5 @@ width=600
 height=600
 rotate_text_on_selector=true
 remove_used_nums_from_selector=true
+highlight_mouse_pos_sectors=true
 """

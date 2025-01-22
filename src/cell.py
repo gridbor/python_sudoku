@@ -28,7 +28,10 @@ class Cell:
             self.fill_color = "#d0d0d0"
         else:
             self.fill_color = "#c0c0c0"
-        self.rect_id = canvas.create_rectangle(rx, ry, rx + size, ry + size, outline="#707070", fill=self.fill_color)
+        self.highlight_color = "#9ed3ff"
+        self.highlight_num_color = "#8bbae0"
+        self.current_fill_color = self.fill_color
+        self.rect_id = canvas.create_rectangle(rx, ry, rx + size, ry + size, outline="#707070", fill=self.current_fill_color)
         self.text_id = None
         self.text_shadow = None
         self._left = rx
@@ -144,7 +147,7 @@ class Cell:
         self._selector = Selector(self, self.canvas, x, y, self.allowed_numbers)
 
     def deactivate(self):
-        self.canvas.itemconfigure(self.rect_id, fill=self.fill_color)
+        self.canvas.itemconfigure(self.rect_id, fill=self.current_fill_color)
         if self._selector:
             self._selector.destroy()
             self._selector = None
@@ -163,6 +166,10 @@ class Cell:
             v = self._selector.get_choosed_value()
             self._current_value = 0 if v == "x" else int(v)
             self.changeValue()
+
+    def set_highligh(self, enable:bool, is_num:bool=False):
+        self.current_fill_color = (self.highlight_num_color if is_num  else self.highlight_color) if enable else self.fill_color
+        self.canvas.itemconfigure(self.rect_id, fill=self.current_fill_color)
 
 
 from .selector import Selector

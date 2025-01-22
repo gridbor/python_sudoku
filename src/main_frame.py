@@ -1,5 +1,6 @@
 import tkinter
 from tkinter import ttk
+import tkinter.font
 import random
 import time
 import os
@@ -41,28 +42,33 @@ class GameMainFrame:
         fw = w + self.frame_offset + 1
         fh = h + self.frame_offset + 1
 
+        parent.columnconfigure([0], weight=1)
+        parent.rowconfigure([0,1], weight=1)
+
         self.control_frame = ControlFrame(parent, self.refresh, self.toggle_visibility)
-        self.control_frame.grid(column=0, row=0, columnspan=2, sticky=tkinter.N + tkinter.EW)
+        self.control_frame.grid(row=0, column=0, sticky=tkinter.N + tkinter.EW)
 
         parent.wait_visibility(self.control_frame)
+        parent.maxsize(fw, fh + self.control_frame.winfo_height())
         parent.minsize(fw, fh + self.control_frame.winfo_height())
 
         self.canvas = tkinter.Canvas(parent, highlightthickness=0, borderwidth=0, width=fw, height=fh)
-        self.canvas.grid(row=1, column=1, sticky=tkinter.NSEW)
+        self.canvas.grid(row=1, column=0, sticky=tkinter.NSEW)
         self.canvas.bind("<ButtonPress-1>", lambda event: self.mouseEvent("pressed", event))
         self.canvas.bind("<ButtonRelease-1>", lambda event: self.mouseEvent("released", event))
         self.canvas.bind("<Motion>", lambda event: self.mouseEvent("move", event))
         self.canvas.create_rectangle(0, 0, fw, fh, fill="#fcfcfc")
-
-        parent.columnconfigure([0,1], weight=1)
-        parent.rowconfigure([0,1], weight=1)
+        self._win_text = self.canvas.create_text(fw / 2, self.frame_offset / 4, anchor=tkinter.CENTER, justify=tkinter.CENTER, state=tkinter.HIDDEN, fill="red", text="SOLVED!", font=tkinter.font.Font(self.canvas, size=16))
 
         self.cells:list[Cell] = []
         self.checker = None
         self.selected_cell:Cell = None
+
         self._press_time = None
         self._initial_data = None
         self._board_visible = True
+        self._game_over = False
+        self._on_mouse_over_cell:Cell = None
 
     def drawBoard(self):
         ms = min(GameMainFrame.FRAME_WIDTH, GameMainFrame.FRAME_HEIGHT)
@@ -77,18 +83,25 @@ class GameMainFrame:
         self.checker = Checker(self.cells)
         self.control_frame.show_ms = True
         self.control_frame.start_timer()
+        if self._game_over:
+            self._game_over = False
+            self.canvas.itemconfigure(self._win_text, state=tkinter.HIDDEN)
 
     def refresh(self):
+        self.control_frame.reset_timer()
         self.clear_board()
         self.parent.focus()
-        self.control_frame.reset_timer()
 
     def clear_board(self):
         for c in self.cells:
             c.current_value = 0
+        if self._game_over:
+            self._game_over = False
+            self.canvas.itemconfigure(self._win_text, state=tkinter.HIDDEN)
+            self.control_frame.start_timer()
 
     def set_board_visibility(self, visible:bool):
-        if self._board_visible == visible:
+        if self._board_visible == visible or self._game_over:
             return
         self._board_visible = visible
         for c in self.cells:
@@ -102,11 +115,47 @@ class GameMainFrame:
         self.set_board_visibility(not self._board_visible)
         self.parent.focus()
 
+    def set_numbers_highlight(self, value:int, enabled:bool):
+        for cell in self.cells:
+            if cell.current_value != 0 and cell.current_value == value:
+                cell.set_highligh(enabled, True)
+
+
     def mouseEvent(self, type, event):
+        if self._game_over:
+            return
+
         # MOUSE MOTION
         if type == "move":
             if self.selected_cell:
                 self.selected_cell.selector_mouse_pos(event.x, event.y, event.state & 0x100 != 0)
+            if GameConfigs.get_config_value("highlight_mouse_pos_sectors"):
+                not_found = True
+                highlight = None
+                over_cell = None
+                for c in self.cells:
+                    if c.is_overlap(event.x, event.y):
+                        if c == self._on_mouse_over_cell:
+                            not_found = False
+                            break
+                        over_cell = c
+                        highlight = "enable"
+                        not_found = False
+                        break
+                if not_found and self._on_mouse_over_cell is not None:
+                    highlight = "restore"
+                if highlight is not None:
+                    if self._on_mouse_over_cell is not None:
+                        all_indexes = self.checker.get_cell_groups_indexes(self._on_mouse_over_cell)
+                        for index in all_indexes:
+                            self.cells[index].set_highligh(False)
+                        self.set_numbers_highlight(self._on_mouse_over_cell.current_value, False)
+                    if highlight == "enable":
+                        all_indexes = self.checker.get_cell_groups_indexes(over_cell)
+                        for index in all_indexes:
+                            self.cells[index].set_highligh(True)
+                        self.set_numbers_highlight(over_cell.current_value, True)
+                    self._on_mouse_over_cell = over_cell
 
         # PRESS MOUSE BUTTON
         elif type == "pressed":
@@ -125,7 +174,12 @@ class GameMainFrame:
             if old_select:
                 is_selector_pressed = old_select.check_selector_choice(event.x, event.y, True)
                 if is_selector_pressed:
+                    self.set_numbers_highlight(old_select.current_value, False)
                     old_select.accept_selector_choice()
+                    if old_select.current_value != 0:
+                        self.set_numbers_highlight(old_select.current_value, True)
+                    else:
+                        old_select.set_highligh(True)
                     self.check_completed()
                 if self.selected_cell and self.selected_cell.id == old_select.id:
                     self.selected_cell.deactivate()
@@ -149,7 +203,12 @@ class GameMainFrame:
                         self._press_time = None
                         return
                 if self.selected_cell.check_selector_choice(event.x, event.y, False):
+                    self.set_numbers_highlight(self.selected_cell.current_value, False)
                     self.selected_cell.accept_selector_choice()
+                    if self.selected_cell.current_value != 0:
+                        self.set_numbers_highlight(self.selected_cell.current_value, True)
+                    else:
+                        self.selected_cell.set_highligh(True)
                     self.check_completed()
                 self.selected_cell.deactivate()
                 self._press_time = None
@@ -157,7 +216,16 @@ class GameMainFrame:
 
 
     def check_completed(self):
-        ...
+        for c in self.cells:
+            if c.current_value == 0:
+                return
+            if not self.checker.correct_cell_value(c):
+                return
+        self.control_frame.stop_timer()
+        self.canvas.itemconfigure(self._win_text, state=tkinter.NORMAL)
+        for c in self.cells:
+            c.set_highligh(False)
+        self._game_over = True
 
 
 from .checker import Checker

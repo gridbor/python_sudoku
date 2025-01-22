@@ -16,7 +16,7 @@ class ControlFrame(ttk.Frame):
         self.pause_button = ttk.Button(self, textvariable=self.pause_textvar, command=visibility_callback)
         self.pause_button.pack(side=tkinter.LEFT, after=self.refresh_button)
         self.timer_label = ttk.Label(self, textvariable=self.timer_textvar, font=tkinter.font.Font(self, size=12))
-        self.timer_label.pack(after=self.pause_button, anchor=tkinter.E, side=tkinter.RIGHT)
+        self.timer_label.pack(after=self.pause_button, side=tkinter.RIGHT)
 
         self._is_timer_run = False
         self._create_time = time.time_ns()
