@@ -161,7 +161,7 @@ class Cell:
         if self._selector:
             return self._selector.check_choice(x, y, pressed)
         return False
-    
+
     def accept_selector_choice(self):
         if self.editable and self._selector:
             v = self._selector.get_choosed_value()

@@ -5,7 +5,7 @@ import random
 import time
 import os
 from .game_configs import GameConfigs
-from .gui.ControlFrame import ControlFrame
+
 
 class InitialData:
     def __init__(self):
@@ -14,13 +14,20 @@ class InitialData:
             with open(self._data_path, "w") as data:
                 data.write("")
         with open(self._data_path, "r") as data:
-            all_lines = data.readlines()
-            al = len(all_lines)
+            self._all_lines = data.readlines()
+            al = len(self._all_lines)
             if al > 0:
                 i = random.randrange(0, al)
-                self._current_data = all_lines[i].strip()
+                self._current_index = i
+                self._current_data = self._all_lines[i].strip()
             else:
                 self._current_data = ""
+
+    def new_random_data(self):
+        al = [i for i in range(len(self._all_lines))]
+        al.remove(self._current_index)
+        self._current_index = random.choice(al)
+        self._current_data = self._all_lines[self._current_index].strip()
 
     def get_value(self, x:int, y:int)->int:
         if self._current_data:
@@ -45,7 +52,7 @@ class GameMainFrame:
         parent.columnconfigure([0], weight=1)
         parent.rowconfigure([0,1], weight=1)
 
-        self.control_frame = ControlFrame(parent, self.refresh, self.toggle_visibility)
+        self.control_frame = ControlFrame(parent, self)
         self.control_frame.grid(row=0, column=0, sticky=tkinter.N + tkinter.EW)
 
         parent.wait_visibility(self.control_frame)
@@ -70,6 +77,16 @@ class GameMainFrame:
         self._game_over = False
         self._on_mouse_over_cell:Cell = None
 
+
+    @property
+    def board_visibility(self)->bool:
+        return self._board_visible
+
+    @property
+    def is_game_over(self)->bool:
+        return self._game_over
+
+
     def drawBoard(self):
         ms = min(GameMainFrame.FRAME_WIDTH, GameMainFrame.FRAME_HEIGHT)
         s = ms // 9
@@ -87,14 +104,28 @@ class GameMainFrame:
             self._game_over = False
             self.canvas.itemconfigure(self._win_text, state=tkinter.HIDDEN)
 
+    def new_game(self):
+        self._initial_data.new_random_data()
+        self.control_frame.reset_timer()
+        self.clear_board(True)
+        if not self._board_visible:
+            self.set_board_visibility(True)
+        self.parent.focus()
+
     def refresh(self):
         self.control_frame.reset_timer()
         self.clear_board()
         self.parent.focus()
+        if not self._board_visible:
+            self.set_board_visibility(True)
 
-    def clear_board(self):
+    def clear_board(self, force:bool=False):
         for c in self.cells:
-            c.current_value = 0
+            if force:
+                c.set_impermanent()
+                c.set_permanent(self._initial_data.get_value(c.column, c.row))
+            else:
+                c.current_value = 0
         if self._game_over:
             self._game_over = False
             self.canvas.itemconfigure(self._win_text, state=tkinter.HIDDEN)
@@ -232,3 +263,4 @@ class GameMainFrame:
 
 from .checker import Checker
 from .cell import Cell
+from .gui.ControlFrame import ControlFrame
