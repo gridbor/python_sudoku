@@ -156,7 +156,7 @@ class Selector:
             elif not sector_found:
                 self._restore_choosed_sector()
 
-    def check_choice(self, x:float, y:float, pressed:bool)->bool:
+    def check_choice(self)->bool:
         if self._choosed_sector:
             return True
         return False
@@ -166,3 +166,6 @@ class Selector:
             s = self.canvas.itemcget(self._sectors[self._choosed_sector["index"]]["text_id"], "text")
             return s
         return None
+
+    def set_visibility(self, visibility):
+        self.canvas.itemconfigure("selector", state=visibility)

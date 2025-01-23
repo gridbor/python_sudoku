@@ -46,6 +46,7 @@ class Cell:
             self._editable = True
             self._current_value = 0
         self.allowed_numbers = [i for i in range(1, 10)]
+        self._selector = None
 
 
     @property
@@ -108,6 +109,8 @@ class Cell:
             self.canvas.itemconfigure(self.text_id, state=visible)
         if self.text_shadow:
             self.canvas.itemconfigure(self.text_shadow, state=visible)
+        if self._selector:
+            self._selector.set_visibility(visible)
 
     def _update_texts(self):
         if self.text_id:
@@ -157,9 +160,9 @@ class Cell:
         if self._selector:
             self._selector.mouse_pos(x, y, button_pressed)
 
-    def check_selector_choice(self, x:float, y:float, pressed:bool)->bool:
+    def check_selector_choice(self)->bool:
         if self._selector:
-            return self._selector.check_choice(x, y, pressed)
+            return self._selector.check_choice()
         return False
 
     def accept_selector_choice(self):

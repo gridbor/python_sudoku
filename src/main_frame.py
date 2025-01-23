@@ -79,7 +79,7 @@ class GameMainFrame:
 
 
     @property
-    def board_visibility(self)->bool:
+    def board_visible(self)->bool:
         return self._board_visible
 
     @property
@@ -155,7 +155,7 @@ class GameMainFrame:
 
 
     def mouseEvent(self, type, event):
-        if self._game_over:
+        if self._game_over or not self.board_visible:
             return
 
         # MOUSE MOTION
@@ -205,14 +205,15 @@ class GameMainFrame:
                     break
             is_selector_pressed = False
             if old_select:
-                is_selector_pressed = old_select.check_selector_choice(event.x, event.y, True)
+                is_selector_pressed = old_select.check_selector_choice()
                 if is_selector_pressed:
                     self.set_numbers_highlight(old_select.current_value, False)
                     old_select.accept_selector_choice()
-                    if old_select.current_value != 0:
-                        self.set_numbers_highlight(old_select.current_value, True)
-                    else:
-                        old_select.set_highligh(True)
+                    if Cell.offset() < event.x < Cell.offset() + Cell.size() * 9 + 2 and Cell.offset() < event.y < Cell.offset() + Cell.size() * 9 + 2:
+                        if old_select.current_value != 0:
+                            self.set_numbers_highlight(old_select.current_value, True)
+                        else:
+                            old_select.set_highligh(True)
                     self.check_completed()
                 if self.selected_cell and self.selected_cell.id == old_select.id:
                     self.selected_cell.deactivate()
@@ -235,13 +236,14 @@ class GameMainFrame:
                     if time.time() - self._press_time < 0.4:
                         self._press_time = None
                         return
-                if self.selected_cell.check_selector_choice(event.x, event.y, False):
+                if self.selected_cell.check_selector_choice():
                     self.set_numbers_highlight(self.selected_cell.current_value, False)
                     self.selected_cell.accept_selector_choice()
-                    if self.selected_cell.current_value != 0:
-                        self.set_numbers_highlight(self.selected_cell.current_value, True)
-                    else:
-                        self.selected_cell.set_highligh(True)
+                    if Cell.offset() < event.x < Cell.offset() + Cell.size() * 9 + 2 and Cell.offset() < event.y < Cell.offset() + Cell.size() * 9 + 2:
+                        if self.selected_cell.current_value != 0:
+                            self.set_numbers_highlight(self.selected_cell.current_value, True)
+                        else:
+                            self.selected_cell.set_highligh(True)
                     self.check_completed()
                 self.selected_cell.deactivate()
                 self._press_time = None

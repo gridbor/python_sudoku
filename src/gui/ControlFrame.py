@@ -4,6 +4,47 @@ import tkinter.font
 import time
 
 from src.main_frame import GameMainFrame
+from src.game_configs import GameConfigs
+
+
+class ConfigureWindow(tkinter.Toplevel):
+    def __init__(self, parent, main_frame:GameMainFrame, restore_visibility:bool):
+        super().__init__(parent)
+        self.title("Configure")
+        self.grab_set()
+        self.protocol("WM_DELETE_WINDOW", self.on_delete_window)
+
+        self.parent = parent
+        self.main_frame = main_frame
+        self._restore_visibility = restore_visibility
+        self._vars = []
+
+        rows = 0
+        for param in GameConfigs.instance().params:
+            label = ttk.Label(self, text=param["name"], anchor=tkinter.NE)
+            label.grid(row=rows, column=0, sticky=tkinter.NE, padx=2, pady=2)
+            setattr(self, f"_{param['name']}&label", label)
+
+            if type(param["value"]) is not bool:
+                var = tkinter.StringVar(self, str(param["value"]), f"var_{param['name']}")
+            else:
+                var = tkinter.BooleanVar(self, param["value"], f"var_{param['name']}")
+            self._vars.append({"param":param, "type":type(param["value"]), "variable":var})
+            if type(param["value"]) is bool:
+                value = ttk.Checkbutton(self, name=f"ui_{param['name']}", variable=var)
+            else:
+                value = ttk.Entry(self, name=f"ui_{param['name']}", textvariable=var)
+            value.grid(row=rows, column=1, padx=2, pady=2, sticky=tkinter.NW)
+            setattr(self, f"_{param['name']}&value", value)
+
+            rows += 1
+
+        self.focus()
+
+    def on_delete_window(self):
+        if self._restore_visibility:
+            self.main_frame.toggle_visibility()
+        self.destroy()
 
 
 class ControlFrame(ttk.Frame):
@@ -22,6 +63,8 @@ class ControlFrame(ttk.Frame):
         self.refresh_button.pack(side=tkinter.LEFT, after=self.new_game_button)
         self.pause_button = ttk.Button(self, textvariable=self.pause_textvar, command=main_frame.toggle_visibility)
         self.pause_button.pack(side=tkinter.LEFT, after=self.refresh_button)
+        self.config_button = ttk.Button(self, text="Configure", command=self.configure_callback)
+        self.config_button.pack(side=tkinter.LEFT, after=self.pause_button)
         self.timer_label = ttk.Label(self, textvariable=self.timer_textvar, font=tkinter.font.Font(self, size=12))
         self.timer_label.pack(side=tkinter.RIGHT, after=self.pause_button)
 
@@ -80,4 +123,12 @@ class ControlFrame(ttk.Frame):
     def pause_button_update(self):
         if self.main_frame.is_game_over:
             return
-        self.pause_textvar.set("Pause" if self.main_frame.board_visibility else "Resume")
+        self.pause_textvar.set("Pause" if self.main_frame.board_visible else "Resume")
+
+    def configure_callback(self):
+        restore = False
+        if self.main_frame.board_visible:
+            self.main_frame.toggle_visibility()
+            restore = True
+        self.parent_widget.focus()
+        ConfigureWindow(self.parent_widget, self.main_frame, restore)

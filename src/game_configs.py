@@ -29,12 +29,17 @@ class GameConfigs:
                 print(f"WARNING: In GameConfigs attribute \"{name}\" is not exists!")
                 return None
 
+    @staticmethod
+    def instance():
+        return GameConfigs._get_instance()
+
 
     def __init__(self):
         self._configs_path = os.path.abspath( os.path.join(os.path.abspath(__file__), "../../configs.txt") )
         if not os.path.exists(self._configs_path) or os.stat(self._configs_path).st_size == 0:
             with open(self._configs_path, "w", encoding="utf-8") as cfg:
                 cfg.write(self._default_configs())
+        self.params = []
         self._parse()
 
     def _parse(self):
@@ -87,6 +92,7 @@ class GameConfigs:
                 key = key.strip()
                 value = parse_value(value.strip())
                 self.__setattr__(f"_{key}", value)
+                self.params.append({"name":key, "value":value})
 
 
     def _save(self):
