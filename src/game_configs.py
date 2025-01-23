@@ -12,11 +12,15 @@ class GameConfigs:
 
     @staticmethod
     def width():
-        return GameConfigs._get_instance()._width
+        if hasattr(GameConfigs._get_instance(), "_width"):
+            return GameConfigs._get_instance()._width
+        return 600
 
     @staticmethod
     def height():
-        return GameConfigs._get_instance()._height
+        if hasattr(GameConfigs._get_instance(), "_height"):
+            return GameConfigs._get_instance()._height
+        return 600
 
     @staticmethod
     def get_config_value(name:str):
@@ -27,7 +31,7 @@ class GameConfigs:
                 return GameConfigs._get_instance().__getattribute__(name)
             else:
                 print(f"WARNING: In GameConfigs attribute \"{name}\" is not exists!")
-                return None
+        return None
 
     @staticmethod
     def instance():
@@ -39,64 +43,79 @@ class GameConfigs:
         if not os.path.exists(self._configs_path) or os.stat(self._configs_path).st_size == 0:
             with open(self._configs_path, "w", encoding="utf-8") as cfg:
                 cfg.write(self._default_configs())
+        self._config_txt = ""
         self.params = []
         self._parse()
 
-    def _parse(self):
-        def parse_value(v:str):
-            if v.lower() == "true":
-                return True
-            if v.lower() == "false":
-                return False
-            is_int = True
-            is_float = True
-            dot_found = False
-            has_digit = False
-            for i in range(len(v)):
-                s = v[i]
-                if s.isdigit():
-                    has_digit = True
-                    continue
-                if i == 0 and (s == "-" or s == "."):
-                    if s == ".":
-                        is_int = False
-                        dot_found = True
-                    continue
-                if i == 0:
+    def _parse_value(self, v:str):
+        if v.lower() == "true":
+            return True
+        if v.lower() == "false":
+            return False
+        is_int = True
+        is_float = True
+        dot_found = False
+        has_digit = False
+        for i in range(len(v)):
+            s = v[i]
+            if s.isdigit():
+                has_digit = True
+                continue
+            if i == 0 and (s == "-" or s == "."):
+                if s == ".":
                     is_int = False
-                    is_float = False
-                    break
-                else:
-                    if not dot_found and s == ".":
-                        is_int = False
-                        dot_found = True
-                        continue
+                    dot_found = True
+                continue
+            if i == 0:
+                is_int = False
+                is_float = False
+                break
+            else:
+                if not dot_found and s == ".":
                     is_int = False
-                    is_float = False
-                    break
-            if is_int and has_digit:
-                return int(v)
-            if is_float and has_digit:
-                return float(v)
-            return v
+                    dot_found = True
+                    continue
+                is_int = False
+                is_float = False
+                break
+        if is_int and has_digit:
+            return int(v)
+        if is_float and has_digit:
+            return float(v)
+        return v
 
+    def _parse(self):
         with open(self._configs_path, "r", encoding="utf-8") as cfg:
             while True:
                 line = cfg.readline()
                 if line == "":
                     break
                 line = line.lstrip()
+                self._config_txt += f"{line}"
                 if line == "" or line[0] == "#" or line.find("=") == -1:
                     continue
                 key, value = line.split("=", 1)
                 key = key.strip()
-                value = parse_value(value.strip())
+                value = self._parse_value(value.strip())
                 self.__setattr__(f"_{key}", value)
                 self.params.append({"name":key, "value":value})
 
 
-    def _save(self):
-        ...
+    def save(self, config_params:list):
+        changed = False
+        for param in config_params:
+            if str(param["param"]["value"]) != str(param["variable"].get()):
+                if not changed:
+                    changed = True
+                start_index = self._config_txt.find("=", self._config_txt.find(param["param"]["name"])) + 1
+                finish_index = self._config_txt.find("\n", start_index)
+                self._config_txt = self._config_txt.replace(self._config_txt[start_index:finish_index], str(param["variable"].get()), 1)
+                self.params[self.params.index(param["param"])]["value"] = param["variable"].get()
+                self.__setattr__(f"_{param["param"]["name"]}", param["variable"].get())
+        if changed:
+            with open(self._configs_path, "w", encoding="utf-8") as cfg:
+                cfg.write(self._config_txt)
+
 
     def _default_configs(self)->str:
         return """# Generated default config file. Key=Value, lines start with # will be ignored.

@@ -147,7 +147,8 @@ class GameMainFrame:
         self.parent.focus()
 
     def set_numbers_highlight(self, value:int, enabled:bool):
-        if not GameConfigs.get_config_value("highlight_mouse_pos_sectors"):
+        highlight_config_value = GameConfigs.get_config_value("highlight_mouse_pos_sectors")
+        if highlight_config_value is None or not highlight_config_value:
             return
         for cell in self.cells:
             if cell.current_value != 0 and cell.current_value == value:
@@ -157,12 +158,13 @@ class GameMainFrame:
     def mouseEvent(self, type, event):
         if self._game_over or not self.board_visible:
             return
+        highlight_config_value = GameConfigs.get_config_value("highlight_mouse_pos_sectors")
 
         # MOUSE MOTION
         if type == "move":
             if self.selected_cell:
                 self.selected_cell.selector_mouse_pos(event.x, event.y, event.state & 0x100 != 0)
-            if GameConfigs.get_config_value("highlight_mouse_pos_sectors"):
+            if highlight_config_value is not None and highlight_config_value:
                 not_found = True
                 highlight = None
                 over_cell = None
@@ -227,6 +229,8 @@ class GameMainFrame:
             if self.selected_cell:
                 if GameConfigs.get_config_value("remove_used_nums_from_selector"):
                     self.selected_cell.allowed_numbers = self.checker.get_allowed_nums(self.selected_cell)
+                else:
+                    self.selected_cell.allowed_numbers = [i for i in range(1, 10)]
                 self.selected_cell.activate(event.x, event.y)
 
         # RELEASE MOUSE BUTTON

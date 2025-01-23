@@ -172,7 +172,8 @@ class Cell:
             self.changeValue()
 
     def set_highligh(self, enable:bool, is_num:bool=False):
-        if not GameConfigs.get_config_value("highlight_mouse_pos_sectors"):
+        highlight_config_value = GameConfigs.get_config_value("highlight_mouse_pos_sectors")
+        if highlight_config_value is None or not highlight_config_value:
             return
         self.current_fill_color = (self.highlight_num_color if is_num  else self.highlight_color) if enable else self.fill_color
         self.canvas.itemconfigure(self.rect_id, fill=self.current_fill_color)

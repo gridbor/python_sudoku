@@ -18,6 +18,7 @@ class ConfigureWindow(tkinter.Toplevel):
         self.main_frame = main_frame
         self._restore_visibility = restore_visibility
         self._vars = []
+        self.focus()
 
         rows = 0
         for param in GameConfigs.instance().params:
@@ -33,13 +34,24 @@ class ConfigureWindow(tkinter.Toplevel):
             if type(param["value"]) is bool:
                 value = ttk.Checkbutton(self, name=f"ui_{param['name']}", variable=var)
             else:
-                value = ttk.Entry(self, name=f"ui_{param['name']}", textvariable=var)
+                value = ttk.Entry(self, name=f"ui_{param['name']}", textvariable=var, width=6 if type(param["value"]) in [int, float] else 20)
             value.grid(row=rows, column=1, padx=2, pady=2, sticky=tkinter.NW)
             setattr(self, f"_{param['name']}&value", value)
-
             rows += 1
+        self.buttons_frame = ttk.Frame(self)
+        self.buttons_frame.grid(row=rows, column=0, columnspan=2, padx=2, pady=2, sticky=tkinter.SE)
+        self._apply_button = ttk.Button(self.buttons_frame, text="Apply", command=self.apply_configs)
+        self._apply_button.pack(side=tkinter.RIGHT)
+        self._cancel_button = ttk.Button(self.buttons_frame, text="Cancel", command=self.cancel_configs)
+        self._cancel_button.pack(side=tkinter.RIGHT)
+        self.resizable(False, False)
 
-        self.focus()
+    def apply_configs(self):
+        GameConfigs.instance().save(self._vars)
+        self.on_delete_window()
+
+    def cancel_configs(self):
+        self.on_delete_window()
 
     def on_delete_window(self):
         if self._restore_visibility:
