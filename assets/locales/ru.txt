@@ -1,0 +1,15 @@
+sudoku:Судоку
+width:Ширина
+height:Высота
+rotate_text_on_selector:Поворот цифр в Выборке
+remove_used_nums_from_selector:Удалить использованные цифры из Выборки
+highlight_mouse_pos_sectors:Выделение зависимых секторов
+apply:Принять
+cancel:Отмена
+new_game:Новая Игра
+refresh:Перезапуск
+pause:Пауза
+resume:Возобновить
+configure:Настройка
+win_text:РЕШЕНО!
+language:Язык

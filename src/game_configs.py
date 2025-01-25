@@ -1,5 +1,6 @@
 import os
-import sys
+from .texts import Texts
+
 
 class GameConfigs:
     _instance = None
@@ -103,18 +104,27 @@ class GameConfigs:
 
     def save(self, config_params:list):
         changed = False
+        refresh_locale = None
         for param in config_params:
+            loc = ""
+            if param["param"]["name"] == "language":
+                for locale in Texts.instance().locales:
+                    if locale["value"] == param["variable"].get():
+                        loc = locale["key"]
+                        refresh_locale = loc
             if str(param["param"]["value"]) != str(param["variable"].get()):
                 if not changed:
                     changed = True
                 start_index = self._config_txt.find("=", self._config_txt.find(param["param"]["name"])) + 1
                 finish_index = self._config_txt.find("\n", start_index)
-                self._config_txt = self._config_txt.replace(self._config_txt[start_index:finish_index], str(param["variable"].get()), 1)
+                self._config_txt = self._config_txt[:start_index] + (str(param["variable"].get()) if loc == "" else loc) + self._config_txt[finish_index:]
                 self.params[self.params.index(param["param"])]["value"] = param["variable"].get()
                 self.__setattr__(f"_{param["param"]["name"]}", param["variable"].get())
         if changed:
             with open(self._configs_path, "w", encoding="utf-8") as cfg:
                 cfg.write(self._config_txt)
+        if refresh_locale is not None:
+            Texts.instance().load_locale(refresh_locale)
 
 
     def _default_configs(self)->str:
@@ -124,4 +134,5 @@ height=600
 rotate_text_on_selector=true
 remove_used_nums_from_selector=true
 highlight_mouse_pos_sectors=true
+language=en
 """

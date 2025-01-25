@@ -1,0 +1,17 @@
+sudoku:Sudoku
+width:Width
+height:Height
+rotate_text_on_selector:Rotate numbers on Selector
+remove_used_nums_from_selector:Remove used numbers from Selector
+highlight_mouse_pos_sectors:Highlight dependent sectors
+apply:Apply
+cancel:Cancel
+new_game:New Game
+refresh:Refresh
+pause:Pause
+resume:Resume
+configure:Configure
+win_text:SOLVED!
+language:Langauage
+en:English
+ru:Русский

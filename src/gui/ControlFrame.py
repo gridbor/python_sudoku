@@ -5,12 +5,13 @@ import time
 
 from src.main_frame import GameMainFrame
 from src.game_configs import GameConfigs
+from src.texts import Texts
 
 
 class ConfigureWindow(tkinter.Toplevel):
     def __init__(self, parent, main_frame:GameMainFrame, restore_visibility:bool):
         super().__init__(parent)
-        self.title("Configure")
+        self.title(Texts.get("configure"))
         self.grab_set()
         self.protocol("WM_DELETE_WINDOW", self.on_delete_window)
 
@@ -22,7 +23,7 @@ class ConfigureWindow(tkinter.Toplevel):
 
         rows = 0
         for param in GameConfigs.instance().params:
-            label = ttk.Label(self, text=param["name"], anchor=tkinter.NE)
+            label = ttk.Label(self, text=Texts.get(param["name"]), anchor=tkinter.NE)
             label.grid(row=rows, column=0, sticky=tkinter.NE, padx=2, pady=2)
             setattr(self, f"_{param['name']}&label", label)
 
@@ -31,8 +32,15 @@ class ConfigureWindow(tkinter.Toplevel):
             else:
                 var = tkinter.BooleanVar(self, param["value"], f"var_{param['name']}")
             self._vars.append({"param":param, "type":type(param["value"]), "variable":var})
+
             if type(param["value"]) is bool:
                 value = ttk.Checkbutton(self, name=f"ui_{param['name']}", variable=var)
+            elif param["name"] == "language":
+                for locale in Texts.instance().locales:
+                    if locale["key"] == var.get():
+                        var.set(locale["value"])
+                        break
+                value = ttk.Combobox(self, name=f"ui_{param['name']}", textvariable=var, values=[x["value"] for x in Texts.instance().locales], state="readonly")
             else:
                 value = ttk.Entry(self, name=f"ui_{param['name']}", textvariable=var, width=6 if type(param["value"]) in [int, float] else 20)
             value.grid(row=rows, column=1, padx=2, pady=2, sticky=tkinter.NW)
@@ -40,9 +48,9 @@ class ConfigureWindow(tkinter.Toplevel):
             rows += 1
         self.buttons_frame = ttk.Frame(self)
         self.buttons_frame.grid(row=rows, column=0, columnspan=2, padx=2, pady=2, sticky=tkinter.SE)
-        self._apply_button = ttk.Button(self.buttons_frame, text="Apply", command=self.apply_configs)
+        self._apply_button = ttk.Button(self.buttons_frame, text=Texts.get("apply"), command=self.apply_configs)
         self._apply_button.pack(side=tkinter.RIGHT)
-        self._cancel_button = ttk.Button(self.buttons_frame, text="Cancel", command=self.cancel_configs)
+        self._cancel_button = ttk.Button(self.buttons_frame, text=Texts.get("cancel"), command=self.cancel_configs)
         self._cancel_button.pack(side=tkinter.RIGHT)
         self.resizable(False, False)
 
@@ -66,16 +74,16 @@ class ControlFrame(ttk.Frame):
         self.parent_widget = parent
         self.main_frame = main_frame
 
-        self.pause_textvar = tkinter.StringVar(self, "Pause")
+        self.pause_textvar = tkinter.StringVar(self, Texts.get("pause"))
         self.timer_textvar = tkinter.StringVar(self, "0")
 
-        self.new_game_button = ttk.Button(self, text="New Game", command=main_frame.new_game)
+        self.new_game_button = ttk.Button(self, text=Texts.get("new_game"), command=main_frame.new_game)
         self.new_game_button.pack(side=tkinter.LEFT)
-        self.refresh_button = ttk.Button(self, text="Refresh", command=main_frame.refresh)
+        self.refresh_button = ttk.Button(self, text=Texts.get("refresh"), command=main_frame.refresh)
         self.refresh_button.pack(side=tkinter.LEFT, after=self.new_game_button)
         self.pause_button = ttk.Button(self, textvariable=self.pause_textvar, command=main_frame.toggle_visibility)
         self.pause_button.pack(side=tkinter.LEFT, after=self.refresh_button)
-        self.config_button = ttk.Button(self, text="Configure", command=self.configure_callback)
+        self.config_button = ttk.Button(self, text=Texts.get("configure"), command=self.configure_callback)
         self.config_button.pack(side=tkinter.LEFT, after=self.pause_button)
         self.timer_label = ttk.Label(self, textvariable=self.timer_textvar, font=tkinter.font.Font(self, size=12))
         self.timer_label.pack(side=tkinter.RIGHT, after=self.pause_button)
@@ -135,7 +143,7 @@ class ControlFrame(ttk.Frame):
     def pause_button_update(self):
         if self.main_frame.is_game_over:
             return
-        self.pause_textvar.set("Pause" if self.main_frame.board_visible else "Resume")
+        self.pause_textvar.set(Texts.get("pause") if self.main_frame.board_visible else Texts.get("resume"))
 
     def configure_callback(self):
         restore = False
@@ -144,3 +152,9 @@ class ControlFrame(ttk.Frame):
             restore = True
         self.parent_widget.focus()
         ConfigureWindow(self.parent_widget, self.main_frame, restore)
+
+    def update_texts(self):
+        self.pause_textvar.set(Texts.get("pause") if self.main_frame.board_visible else Texts.get("resume"))
+        self.new_game_button.configure(text=Texts.get("new_game"))
+        self.refresh_button.configure(text=Texts.get("refresh"))
+        self.config_button.configure(text=Texts.get("configure"))
