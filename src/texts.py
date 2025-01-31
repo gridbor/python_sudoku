@@ -12,8 +12,10 @@ class Texts():
     @staticmethod
     def get(key:str, default:str="")->str:
         value = Texts.instance().get_text(key)
-        if value:
+        if value not in ["$NOT_FOUND$", "$NOT_EXIST$"]:
             return value
+        if default == "":
+            default = f"{key}_{value}"
         return default
 
 

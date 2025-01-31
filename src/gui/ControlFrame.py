@@ -81,8 +81,10 @@ class ControlFrame(ttk.Frame):
         self.new_game_button.pack(side=tkinter.LEFT)
         self.refresh_button = ttk.Button(self, text=Texts.get("refresh"), command=main_frame.refresh)
         self.refresh_button.pack(side=tkinter.LEFT, after=self.new_game_button)
+        self.cheats_button = ttk.Button(self, text=Texts.get("cheats"), command=self.show_cheats)
+        self.cheats_button.pack(side=tkinter.LEFT, after=self.refresh_button)
         self.pause_button = ttk.Button(self, textvariable=self.pause_textvar, command=main_frame.toggle_visibility)
-        self.pause_button.pack(side=tkinter.LEFT, after=self.refresh_button)
+        self.pause_button.pack(side=tkinter.LEFT, after=self.cheats_button)
         self.config_button = ttk.Button(self, text=Texts.get("configure"), command=self.configure_callback)
         self.config_button.pack(side=tkinter.LEFT, after=self.pause_button)
         self.timer_label = ttk.Label(self, textvariable=self.timer_textvar, font=tkinter.font.Font(self, size=12))
@@ -152,6 +154,10 @@ class ControlFrame(ttk.Frame):
             restore = True
         self.parent_widget.focus()
         ConfigureWindow(self.parent_widget, self.main_frame, restore)
+
+    def show_cheats(self):
+        ...
+
 
     def update_texts(self):
         self.pause_textvar.set(Texts.get("pause") if self.main_frame.board_visible else Texts.get("resume"))

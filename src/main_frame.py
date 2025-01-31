@@ -66,7 +66,11 @@ class GameMainFrame:
         self.canvas.bind("<ButtonRelease-1>", lambda event: self.mouseEvent("released", event))
         self.canvas.bind("<Motion>", lambda event: self.mouseEvent("move", event))
         self.canvas.create_rectangle(0, 0, fw, fh, fill="#fcfcfc")
-        self._win_text = self.canvas.create_text(fw / 2, self.frame_offset / 4, anchor=tkinter.CENTER, justify=tkinter.CENTER, state=tkinter.HIDDEN, fill="red", text=Texts.get("win_text"), font=tkinter.font.Font(self.canvas, size=16))
+        self._win_text = self.canvas.create_text(fw / 2, self.frame_offset / 4,
+                                                 anchor=tkinter.CENTER, justify=tkinter.CENTER,
+                                                 state=tkinter.HIDDEN, fill="red",
+                                                 text=Texts.get("win_text"),
+                                                 font=tkinter.font.Font(self.canvas, size=16))
 
         self.cells:list[Cell] = []
         self.checker = None
